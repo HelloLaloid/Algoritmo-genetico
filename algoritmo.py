@@ -2,14 +2,13 @@ import pygame
 import random
 # Dimensiones de la ventana y la cuadrícula
 WINDOW_SIZE = 800
-GRID_SIZE = 20
+GRID_SIZE = 100
 CELL_SIZE = WINDOW_SIZE // GRID_SIZE
 
 # Colores
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
-BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 DARK_GREEN = (34, 139, 34)
@@ -18,28 +17,24 @@ DARK_GREEN = (34, 139, 34)
 class Individuo:
     generacion_actual = 1
     next_id = 1
-    padre = 0
-
-    def __init__(self, x, y):
-        self.id = f"P{self.padre}G{self.generacion_actual}ID{Individuo.next_id}"
+    def __init__(self, x, y, probabilidad_derecha=0.11, padre_id=None, asesino = False):
+        self.id = f"P{padre_id if padre_id else 0}G{Individuo.generacion_actual}ID{Individuo.next_id}"
+        self.padre_id = Individuo.next_id
         self.x = x
         self.y = y
-        self.asesino = random.random() < 0.1
+        self.asesino = asesino
         self.en_meta = False
         self.pasos = 0
-        self.padre = 0
-        self.probabilidad_derecha = 0
+        self.probabilidad_derecha = probabilidad_derecha
         Individuo.next_id += 1
 
     def mover(self, grid, otros_individuos):
         if self.en_meta:
-            return  
-        
+            return
         # Movimientos posibles: Norte, Sur, Este, Oeste, Noreste, Noroeste, Sureste, Suroeste, No mover
         movimientos = [(0, -1), (0, 1), (1, 0), (-1, 0), (1, -1), (-1, -1), (1, 1), (-1, 1), (0, 0)]
         # Probabilidad de los movimientos
-        probabilidades = [0.11, 0.11, 0.11, 0.11, 0.11, 0.11, 0.11, 0.11, 0.12]
-        
+        probabilidades = [0.11, 0.11, self.probabilidad_derecha, 0.11, 0.11, 0.11, 0.11, 0.11, 0.12]  
         dx, dy = random.choices(movimientos, weights=probabilidades)[0]
         new_x = self.x + dx
         new_y = self.y + dy
@@ -59,10 +54,12 @@ class Individuo:
                 #colisión
                 if collided_individual: 
                     if self.asesino:
-                        #print(f"{self.id} mató a {collided_individual.id}!")
                         otros_individuos.remove(collided_individual)  
+                        self.x = new_x
+                        self.y = new_y
+                        if new_x == GRID_SIZE - 1:
+                            self.en_meta = True
                     else:
-                        #print(f"{self.id} chocó contra {collided_individual.id}")
                         self.pasos += 1 
 
 # Función para dibujar la cuadrícula inicial
@@ -116,7 +113,7 @@ def draw_winners(screen, font, ganadores):
         winner_surface.blit(text_ganadores, (10, 10))
 
         for idx, ganador in enumerate(ganadores):
-            text_ganador = font.render(f"{ganador[0]}: {ganador[1]} pasos", True, DARK_GREEN)
+            text_ganador = font.render(f"{ganador[0]}: {ganador[1]} pasos, Prob. derecha: {ganador[2]:.2f}", True, DARK_GREEN)
             winner_surface.blit(text_ganador, (10, 40 + idx * 30))
         
         screen.blit(winner_surface, (WINDOW_SIZE, 0))
@@ -130,14 +127,14 @@ def main():
     clock = pygame.time.Clock()
 
     # Inicialización de la población de individuos (cromosomas)
-    population_size = 30
+    population_size = 500
     population = []
     ganadores = []
-
+    Max_turnos = 2000
     for _ in range(population_size):
         x = random.randint(0, GRID_SIZE - 3)
         y = random.randint(0, GRID_SIZE - 1)
-        population.append(Individuo(x, y))
+        population.append(Individuo(x, y, probabilidad_derecha=0.11))  # Probabilidad base de 0.11 para la primera generación
     turno = 1
 
     running = True
@@ -152,25 +149,55 @@ def main():
         
         # Mover individuos y verificar si todos los puestos de la meta están ocupados
         move_individuals(population, grid)
-        ganadores = [(ind.id, ind.pasos) for ind in population if ind.en_meta]
+        ganadores = [(ind.id, ind.pasos, ind.probabilidad_derecha, ind.padre_id) for ind in population if ind.en_meta]
 
-        if len(ganadores) >= GRID_SIZE or len(population) <= GRID_SIZE:
+        if len(ganadores) >= GRID_SIZE or all(ind.en_meta for ind in population) or turno == Max_turnos:
             # Ordenar ganadores por número de pasos
             ganadores.sort(key=lambda x: x[1])
             draw_winners(screen, font, ganadores)
-            print(f"Ganadores: {', '.join([f'{ganador[0]} ({ganador[1]} pasos)' for ganador in ganadores])}")
+            print(f"Ganadores: \n {', '.join([f'{ganador[0]} ({ganador[1]} pasos, P.derecha: {ganador[2]:.2f}) ' for ganador in ganadores])}""\n")
+            
+            #eliminar al ultimo si son ganadores impares
             print(len(ganadores))
-            print(len(population))
+            if not len(ganadores) % 2 == 0:
+                ganadores.pop()
+
             # Crear nueva generación
             Individuo.generacion_actual += 1
+
             # Eliminar población actual
             population.clear()
 
-            # Generar nueva generación
-            for _ in range(population_size):
+            #aumentar proabilidad a la derecha de los ganadores
+            for ganador in ganadores:
+                ganador[2] + 0.2
+            
+            Numero_hijos = 0
+            Numero_hijos = len(ganadores)
+            restantes = population_size - Numero_hijos 
+
+            print(Numero_hijos)
+            print(restantes)
+            # Generar nueva generación con herencia de probabilidad y padres
+            while Numero_hijos > 0:
+                for i in range(0,len(ganadores),2):
+                    x = random.randint(0, GRID_SIZE - 3)
+                    y = random.randint(0, GRID_SIZE - 1)
+                    padre1 = ganadores[i]
+                    padre2 = ganadores[i+1] 
+                    probabilidad_derecha = padre1[2] + padre2[2] /2 # Suma de las probabilidades de los padres
+                    padre_id = padre1[3]  # ID del primer padre
+                    population.append(Individuo(x, y, probabilidad_derecha, padre_id))
+                    Numero_hijos -= 1
+
+            #los no ganadores    
+            for i in range(int(restantes)):
                 x = random.randint(0, GRID_SIZE - 3)
                 y = random.randint(0, GRID_SIZE - 1)
-                population.append(Individuo(x, y))
+                probabilidad_derecha = 0.11
+                padre_id = 0
+                asesino = random.random() < 0.1
+                population.append(Individuo(x, y, probabilidad_derecha, padre_id, asesino))
             turno = 1
         else:
             turno += 1
@@ -180,7 +207,7 @@ def main():
                 running = False
 
         pygame.display.flip()
-        clock.tick(50)
+        clock.tick(100)
     pygame.quit()
 
 if __name__ == "__main__":
