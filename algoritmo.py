@@ -218,7 +218,7 @@ def main():
                     Numero_hijos -= 1
 
             # Generar nuevos individuos sin padres
-            for _ in range(int(restantes)):
+            for i in range(int(restantes)):
                 x = random.randint(0, GRID_SIZE - 2)
                 y = random.randint(0, GRID_SIZE - 1)
                 probabilidad_derecha = 0.11
