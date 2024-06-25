@@ -176,33 +176,30 @@ def main():
             draw_winners(screen, font, ganadores)
             print(f"Ganadores:\n {', '.join([f'{ganador[0]} ({ganador[1]} pasos, P.derecha: {ganador[2]:.2f})' for ganador in ganadores])}\n")
 
+            # Registrar datos para graficar
+            supervivientes_por_generacion.append(len(ganadores))
+
             # Eliminar al último si son ganadores impares
             if len(ganadores) % 2 != 0:
                 ganadores.pop()
 
-            # Registrar datos para graficar
-            supervivientes_por_generacion.append(len(ganadores))
-            hijos_generados_por_generacion.append(len(ganadores))
-            asesinados_por_generacion.append(population_size - len(ganadores) * 2)
+            hijos_generados_por_generacion.append(len(ganadores)/2)
+            asesinados_por_generacion.append(len(population)-len(ganadores))
             media_probabilidad_derecha = sum(ganador[2] for ganador in ganadores) / len(ganadores) if ganadores else 0
             media_probabilidad_derecha_por_generacion.append(media_probabilidad_derecha)
 
             # Crear nueva generación
             Individuo.generacion_actual += 1
-
             # Incrementar la generación
             generacion += 1
-            if generacion > max_generaciones:
-                break  # Detener el bucle principal si se ha alcanzado el máximo de generaciones
-
             # Eliminar población actual
             population.clear()
 
             # Aumentar probabilidad a la derecha de los ganadores
-            for i in range(len(ganadores)):
-                ganadores[i] = (ganadores[i][0], ganadores[i][1], ganadores[i][2] + proabilidad_derecha_extra, ganadores[i][3])
+            for ganador in ganadores:
+                ganador[2] + proabilidad_derecha_extra
 
-            Numero_hijos = len(ganadores)
+            Numero_hijos = len(ganadores)/2
             restantes = population_size - Numero_hijos
 
             print("Número de hijos:", Numero_hijos)
@@ -215,7 +212,7 @@ def main():
                     y = random.randint(0, GRID_SIZE - 1)
                     padre1 = ganadores[i]
                     padre2 = ganadores[i + 1]
-                    probabilidad_derecha = (padre1[2] + padre2[2]) / 2  # Suma de las probabilidades de los padres
+                    probabilidad_derecha = padre1[2] + padre2[2] / 2  # Suma de las probabilidades de los padres
                     padre_id = padre1[3]  # ID del primer padre
                     population.append(Individuo(x, y, probabilidad_derecha, padre_id))
                     Numero_hijos -= 1
@@ -229,6 +226,10 @@ def main():
                 asesino = random.random() < proabilidad_asesino
                 population.append(Individuo(x, y, probabilidad_derecha, padre_id, asesino))
             turno = 1
+
+            if generacion > max_generaciones:
+                running = False # Detener el bucle principal si se ha alcanzado el máximo de generaciones
+
         else:
             turno += 1
 
