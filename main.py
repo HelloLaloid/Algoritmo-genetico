@@ -14,13 +14,13 @@ YELLOW = (255, 255, 0)
 GRID_SIZE = 50
 Max_turnos = 1000
 population_size = 100
-proabilidad_asesino = 0.1
+proabilidad_asesino = 0.05
 proabilidad_derecha_extra = random.uniform(0.05, 0.3)
 max_generaciones = 10
 
 # Listas para graficar
 supervivientes_por_generacion = []
-hijos_generados_por_generacion = []
+media_pasos_por_generacion = []
 asesinados_por_generacion = []
 media_probabilidad_derecha_por_generacion = []
 
@@ -130,7 +130,7 @@ def main():
     font = pygame.font.Font(None, 36)
     clock = pygame.time.Clock()
 
-    seed = 666
+    seed = 1
     random.seed(seed)
 
     # Inicialización de la población de individuos (cromosomas)
@@ -159,7 +159,7 @@ def main():
         move_individuals(population, grid)
         ganadores = [(ind.id, ind.pasos, ind.probabilidad_derecha, ind.padre_id) for ind in population if ind.en_meta]
 
-        if len(ganadores) >= GRID_SIZE or all(ind.en_meta for ind in population) or turno == Max_turnos:
+        if len(ganadores) >= GRID_SIZE or all(ind.en_meta for ind in population) or turno == Max_turnos: 
             # Ordenar ganadores por número de pasos y mostrar en pantalla
             ganadores.sort(key=lambda x: x[1])
             print(f"Ganadores:\n {', '.join([f'{ganador[0]} ({ganador[1]} pasos, P.derecha: {ganador[2]:.2f})' for ganador in ganadores])}\n")
@@ -171,15 +171,15 @@ def main():
             if len(ganadores) % 2 != 0:
                 ganadores.pop()
 
-            hijos_generados_por_generacion.append(len(ganadores)/2)
+            media_pasos_meta = sum(ganador[1] for ganador in ganadores) / len(ganadores) if ganadores else 0
+            media_pasos_por_generacion.append(media_pasos_meta) 
             asesinados_por_generacion.append(population_size-len(population))
             media_probabilidad_derecha = sum(ganador[2] for ganador in ganadores) / len(ganadores) if ganadores else 0
             media_probabilidad_derecha_por_generacion.append(media_probabilidad_derecha)
 
             # Crear nueva generación
             Individuo.generacion_actual += 1
-            # Incrementar la generación
-            generacion += 1
+
             # Eliminar población actual
             population.clear()
 
@@ -187,7 +187,7 @@ def main():
             for ganador in ganadores:
                 ganador[2] + proabilidad_derecha_extra
 
-            Numero_hijos = len(ganadores)/2
+            Numero_hijos = len(ganadores)
             restantes = population_size - Numero_hijos
 
             print("Número de hijos:", Numero_hijos)
@@ -214,7 +214,7 @@ def main():
                 asesino = random.random() < proabilidad_asesino
                 population.append(Individuo(x, y, probabilidad_derecha, padre_id, asesino))
             turno = 1
-
+            generacion += 1
             if generacion > max_generaciones:
                 running = False # Detener el bucle principal si se ha alcanzado el máximo de generaciones
 
@@ -231,7 +231,7 @@ def main():
     # Guardar listas en un archivo para graficar después
     with open("datos_graficas.txt", "w") as f:
         f.write(f"supervivientes_por_generacion = {supervivientes_por_generacion}\n")
-        f.write(f"hijos_generados_por_generacion = {hijos_generados_por_generacion}\n")
+        f.write(f"media_pasos_por_generacion = {media_pasos_por_generacion}\n")
         f.write(f"asesinados_por_generacion = {asesinados_por_generacion}\n")
         f.write(f"media_probabilidad_derecha_por_generacion = {media_probabilidad_derecha_por_generacion}\n")
 

@@ -1,0 +1,4 @@
+supervivientes_por_generacion = []
+media_pasos_por_generacion = []
+asesinados_por_generacion = []
+media_probabilidad_derecha_por_generacion = []

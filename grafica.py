@@ -14,11 +14,11 @@ axs[0, 0].set_xlabel('Generación')
 axs[0, 0].set_ylabel('Número de Supervivientes')
 axs[0, 0].grid(True)
 
-# Graficar hijos generados por generación
-axs[0, 1].plot(hijos_generados_por_generacion, marker='o', color='g')
-axs[0, 1].set_title('Hijos Generados por Generación')
+# Graficar media_pasos_por_generacion
+axs[0, 1].plot(media_pasos_por_generacion, marker='o', color='g')
+axs[0, 1].set_title('Media_pasos_por_generacion')
 axs[0, 1].set_xlabel('Generación')
-axs[0, 1].set_ylabel('Número de Hijos Generados')
+axs[0, 1].set_ylabel('pasos')
 axs[0, 1].grid(True)
 
 # Graficar asesinados por generación
