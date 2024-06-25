@@ -23,9 +23,9 @@ axs[0, 1].grid(True)
 
 # Graficar asesinados por generación
 axs[1, 0].plot(asesinados_por_generacion, marker='o', color='r')
-axs[1, 0].set_title('eliminados por Generación')
+axs[1, 0].set_title('asesinados por Generación')
 axs[1, 0].set_xlabel('Generación')
-axs[1, 0].set_ylabel('Número de eliminados')
+axs[1, 0].set_ylabel('Número de asesinados')
 axs[1, 0].grid(True)
 
 # Graficar media de la probabilidad a la derecha por generación
