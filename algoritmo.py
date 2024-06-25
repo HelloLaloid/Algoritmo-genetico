@@ -4,16 +4,18 @@ import random
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
-SKY = (0,255,255)
+SKY = (0, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 DARK_GREEN = (34, 139, 34)
-# variables
+
+# Variables
 GRID_SIZE = 50
-Max_turnos = 2000
+Max_turnos = 100
 population_size = 100
 proabilidad_asesino = 0.1
 proabilidad_derecha_extra = random.uniform(0.05, 0.3)
+max_generaciones = 10
 
 # Dimensiones de la ventana y la cuadrícula
 WINDOW_SIZE = 800
@@ -40,8 +42,8 @@ class Individuo:
         # Movimientos posibles: Norte, Sur, Este, Oeste, Noreste, Noroeste, Sureste, Suroeste, No mover
         movimientos = [(0, -1), (0, 1), (1, 0), (-1, 0), (1, -1), (-1, -1), (1, 1), (-1, 1), (0, 0)]
         # Probabilidad de los movimientos
-        probabilidades = [0.11, 0.11, self.probabilidad_derecha, 0.11, 0.11, 0.11, 0.11, 0.11, 0.12] 
-        # Escojer nuevo movimiento 
+        probabilidades = [0.11, 0.11, self.probabilidad_derecha, 0.11, 0.11, 0.11, 0.11, 0.11, 0.12]
+        # Escoger nuevo movimiento
         dx, dy = random.choices(movimientos, weights=probabilidades)[0]
         new_x = self.x + dx
         new_y = self.y + dy
@@ -50,7 +52,6 @@ class Individuo:
         if 0 <= new_x < GRID_SIZE and 0 <= new_y < GRID_SIZE:
             # Verificar colisión con otro individuo
             collided_individual = next((ind for ind in otros_individuos if ind.x == new_x and ind.y == new_y and ind.id != self.id), None)
-
             if grid[new_y][new_x] == 0 and not collided_individual:
                 self.x = new_x
                 self.y = new_y
@@ -59,16 +60,15 @@ class Individuo:
                 if new_x == GRID_SIZE - 1:
                     self.en_meta = True
             else:
-                #colisión
-                if collided_individual: 
+                if collided_individual:
                     if self.asesino:
-                        otros_individuos.remove(collided_individual)  
+                        otros_individuos.remove(collided_individual)
                         self.x = new_x
                         self.y = new_y
                         if new_x == GRID_SIZE - 1:
                             self.en_meta = True
                     else:
-                        self.pasos += 1 
+                        self.pasos += 1
 
 # Función para dibujar la cuadrícula inicial
 def draw_grid(screen):
@@ -76,6 +76,7 @@ def draw_grid(screen):
         pygame.draw.line(screen, BLACK, (x, 0), (x, WINDOW_SIZE))
     for y in range(0, WINDOW_SIZE, CELL_SIZE):
         pygame.draw.line(screen, BLACK, (0, y), (WINDOW_SIZE, y))
+
 # Función para resaltar la última fila de casillas del lado derecho
 def ultima_fila(screen):
     for y in range(GRID_SIZE):
@@ -84,7 +85,7 @@ def ultima_fila(screen):
 # Función para dibujar los individuos
 def draw_individuals(screen, individuals):
     for individual in individuals:
-        color = GREEN if individual.en_meta else BLACK if individual.asesino else BLUE 
+        color = GREEN if individual.en_meta else BLACK if individual.asesino else BLUE
         pygame.draw.rect(screen, color, (individual.x * CELL_SIZE, individual.y * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
 # Función para mover a todos los individuos
@@ -115,14 +116,14 @@ def draw_winners(screen, font, ganadores):
         winner_surface = pygame.Surface((WINDOW_SIZE // 2, WINDOW_SIZE))
         winner_surface.fill(WHITE)
         pygame.draw.rect(winner_surface, BLACK, winner_surface.get_rect(), 2)
-        
+
         text_ganadores = font.render("Ganadores:", True, BLACK)
         winner_surface.blit(text_ganadores, (10, 10))
 
         for idx, ganador in enumerate(ganadores):
             text_ganador = font.render(f"{ganador[0]}: {ganador[1]} pasos, Prob. derecha: {ganador[2]:.2f}", True, DARK_GREEN)
             winner_surface.blit(text_ganador, (10, 40 + idx * 30))
-        
+
         screen.blit(winner_surface, (WINDOW_SIZE, 0))
 
 # Función principal de la simulación
@@ -140,8 +141,10 @@ def main():
     for _ in range(population_size):
         x = random.randint(0, GRID_SIZE - 2)
         y = random.randint(0, GRID_SIZE - 1)
-        population.append(Individuo(x, y, probabilidad_derecha=0.11)) # Probabilidad base de 0.11 para la primera generación
+        population.append(Individuo(x, y, probabilidad_derecha=0.11))  # Probabilidad base de 0.11 para la primera generación
+
     turno = 1
+    generacion = 1
 
     running = True
     while running:
@@ -152,36 +155,39 @@ def main():
         ultima_fila(screen)
         draw_individuals(screen, population)
         draw_info(screen, font, turno, population)
-        
+
         # Mover individuos y verificar si todos los puestos de la meta están ocupados
         move_individuals(population, grid)
         ganadores = [(ind.id, ind.pasos, ind.probabilidad_derecha, ind.padre_id) for ind in population if ind.en_meta]
 
         if len(ganadores) >= GRID_SIZE or all(ind.en_meta for ind in population) or turno == Max_turnos:
-            # Ordenar ganadores por número de pasos y imprimirlos
+            # Ordenar ganadores por número de pasos y mostrar en pantalla
             ganadores.sort(key=lambda x: x[1])
             draw_winners(screen, font, ganadores)
-            print(f"Ganadores: \n {', '.join([f'{ganador[0]} ({ganador[1]} pasos, P.derecha: {ganador[2]:.2f}) ' for ganador in ganadores])}""\n")
-            
-            # eliminar al ultimo si son ganadores impares
-            if not len(ganadores) % 2 == 0:
+            print(f"Ganadores:\n {', '.join([f'{ganador[0]} ({ganador[1]} pasos, P.derecha: {ganador[2]:.2f})' for ganador in ganadores])}\n")
+
+            # Eliminar al último si son ganadores impares
+            if len(ganadores) % 2 != 0:
                 ganadores.pop()
 
             # Crear nueva generación
             Individuo.generacion_actual += 1
-
+            # Incrementar la generación
+            generacion += 1
+            
             # Eliminar población actual
             population.clear()
 
-            #aumentar proabilidad a la derecha de los ganadores
+            # Aumentar probabilidad a la derecha de los ganadores
             for ganador in ganadores:
-                ganador[2] + proabilidad_derecha_extra
-            
-            Numero_hijos = len(ganadores)
-            restantes = population_size - Numero_hijos 
+                ganador = (ganador[0], ganador[1], ganador[2] + proabilidad_derecha_extra, ganador[3])
 
-            print("numero de hijos: ", Numero_hijos)
-            print("numero de nuevos sin padres: ", restantes)
+            Numero_hijos = len(ganadores)
+            restantes = population_size - Numero_hijos
+
+            print("Número de hijos:", Numero_hijos)
+            print("Número de nuevos sin padres:", restantes)
+
             # Generar nueva generación con herencia de probabilidad y padres
             while Numero_hijos > 0:
                 for i in range(0,len(ganadores),2):
@@ -189,12 +195,12 @@ def main():
                     y = random.randint(0, GRID_SIZE - 1)
                     padre1 = ganadores[i]
                     padre2 = ganadores[i+1] 
-                    probabilidad_derecha = padre1[2] + padre2[2] /2 # Suma de las probabilidades de los padres
+                    probabilidad_derecha = (padre1[2] + padre2[2]) / 2  # Suma de las probabilidades de los padres
                     padre_id = padre1[3]  # ID del primer padre
                     population.append(Individuo(x, y, probabilidad_derecha, padre_id))
                     Numero_hijos -= 1
 
-            #los no ganadores    
+            # Generar nuevos individuos sin padres
             for i in range(int(restantes)):
                 x = random.randint(0, GRID_SIZE - 2)
                 y = random.randint(0, GRID_SIZE - 1)
@@ -203,6 +209,10 @@ def main():
                 asesino = random.random() < proabilidad_asesino
                 population.append(Individuo(x, y, probabilidad_derecha, padre_id, asesino))
             turno = 1
+
+            if generacion > max_generaciones:
+                running = False # Detener el bucle principal si se ha alcanzado el máximo de generaciones
+
         else:
             turno += 1
 
@@ -211,7 +221,7 @@ def main():
                 running = False
 
         pygame.display.flip()
-        clock.tick(100)
+        clock.tick(1000)
     pygame.quit()
 
 if __name__ == "__main__":
