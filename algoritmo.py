@@ -11,15 +11,22 @@ DARK_GREEN = (34, 139, 34)
 
 # Variables
 GRID_SIZE = 50
-Max_turnos = 100
+Max_turnos = 1000
 population_size = 100
 proabilidad_asesino = 0.1
 proabilidad_derecha_extra = random.uniform(0.05, 0.3)
 max_generaciones = 10
 
+# Listas para graficar
+supervivientes_por_generacion = []
+hijos_generados_por_generacion = []
+asesinados_por_generacion = []
+media_probabilidad_derecha_por_generacion = []
+
 # Dimensiones de la ventana y la cuadrícula
 WINDOW_SIZE = 800
 CELL_SIZE = WINDOW_SIZE // GRID_SIZE
+
 # Definir clase Individuo
 class Individuo:
     generacion_actual = 1
@@ -134,6 +141,9 @@ def main():
     font = pygame.font.Font(None, 36)
     clock = pygame.time.Clock()
 
+    seed = 56789
+    random.seed(seed)
+
     # Inicialización de la población de individuos (cromosomas)
     population = []
     ganadores = []
@@ -170,17 +180,27 @@ def main():
             if len(ganadores) % 2 != 0:
                 ganadores.pop()
 
+            # Registrar datos para graficar
+            supervivientes_por_generacion.append(len(ganadores))
+            hijos_generados_por_generacion.append(len(ganadores))
+            asesinados_por_generacion.append(population_size - len(ganadores) * 2)
+            media_probabilidad_derecha = sum(ganador[2] for ganador in ganadores) / len(ganadores) if ganadores else 0
+            media_probabilidad_derecha_por_generacion.append(media_probabilidad_derecha)
+
             # Crear nueva generación
             Individuo.generacion_actual += 1
+
             # Incrementar la generación
             generacion += 1
-            
+            if generacion > max_generaciones:
+                break  # Detener el bucle principal si se ha alcanzado el máximo de generaciones
+
             # Eliminar población actual
             population.clear()
 
             # Aumentar probabilidad a la derecha de los ganadores
-            for ganador in ganadores:
-                ganador = (ganador[0], ganador[1], ganador[2] + proabilidad_derecha_extra, ganador[3])
+            for i in range(len(ganadores)):
+                ganadores[i] = (ganadores[i][0], ganadores[i][1], ganadores[i][2] + proabilidad_derecha_extra, ganadores[i][3])
 
             Numero_hijos = len(ganadores)
             restantes = population_size - Numero_hijos
@@ -190,18 +210,18 @@ def main():
 
             # Generar nueva generación con herencia de probabilidad y padres
             while Numero_hijos > 0:
-                for i in range(0,len(ganadores),2):
+                for i in range(0, len(ganadores), 2):
                     x = random.randint(0, GRID_SIZE - 2)
                     y = random.randint(0, GRID_SIZE - 1)
                     padre1 = ganadores[i]
-                    padre2 = ganadores[i+1] 
+                    padre2 = ganadores[i + 1]
                     probabilidad_derecha = (padre1[2] + padre2[2]) / 2  # Suma de las probabilidades de los padres
                     padre_id = padre1[3]  # ID del primer padre
                     population.append(Individuo(x, y, probabilidad_derecha, padre_id))
                     Numero_hijos -= 1
 
             # Generar nuevos individuos sin padres
-            for i in range(int(restantes)):
+            for _ in range(int(restantes)):
                 x = random.randint(0, GRID_SIZE - 2)
                 y = random.randint(0, GRID_SIZE - 1)
                 probabilidad_derecha = 0.11
@@ -209,10 +229,6 @@ def main():
                 asesino = random.random() < proabilidad_asesino
                 population.append(Individuo(x, y, probabilidad_derecha, padre_id, asesino))
             turno = 1
-
-            if generacion > max_generaciones:
-                running = False # Detener el bucle principal si se ha alcanzado el máximo de generaciones
-
         else:
             turno += 1
 
@@ -221,7 +237,15 @@ def main():
                 running = False
 
         pygame.display.flip()
-        clock.tick(1000)
+        clock.tick(100)
+
+    # Guardar listas en un archivo para graficar después
+    with open("datos_graficas.txt", "w") as f:
+        f.write(f"supervivientes_por_generacion = {supervivientes_por_generacion}\n")
+        f.write(f"hijos_generados_por_generacion = {hijos_generados_por_generacion}\n")
+        f.write(f"asesinados_por_generacion = {asesinados_por_generacion}\n")
+        f.write(f"media_probabilidad_derecha_por_generacion = {media_probabilidad_derecha_por_generacion}\n")
+
     pygame.quit()
 
 if __name__ == "__main__":
