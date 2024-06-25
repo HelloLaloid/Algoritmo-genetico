@@ -54,6 +54,7 @@ class Individuo:
         # Movimientos posibles: Norte, Sur, Este, Oeste, Noreste, Noroeste, Sureste, Suroeste, No mover
         movimientos = [(0, -1*S), (0, 1*S), (1*S, 0), (-1*S, 0), (1*S, -1*S), (-1*S, -1*S), (1*S, 1*S), (-1*S, 1*S), (0, 0)]
         # Probabilidad de los movimientos
+
         probabilidades = [0.11, 0.11, self.probabilidad_derecha, 0.11, 0.11, 0.11, 0.11, 0.11, 0.12]
         # Escoger nuevo movimiento
         dx, dy = random.choices(movimientos, weights=probabilidades)[0]
@@ -157,7 +158,7 @@ def main():
 
         # Mover individuos y verificar si todos los puestos de la meta están ocupados
         move_individuals(population, grid)
-        ganadores = [(ind.id, ind.pasos, ind.probabilidad_derecha, ind.padre_id) for ind in population if ind.en_meta]
+        ganadores = [(ind.id, ind.pasos, ind.probabilidad_derecha, ind.padre_id, ind.asesino) for ind in population if ind.en_meta]
 
         if len(ganadores) >= GRID_SIZE or all(ind.en_meta for ind in population) or turno == Max_turnos: 
             # Ordenar ganadores por número de pasos y mostrar en pantalla
@@ -186,10 +187,11 @@ def main():
             # Aumentar probabilidad a la derecha de los ganadores
             for ganador in ganadores:
                 ganador[2] + proabilidad_derecha_extra
+                
 
             Numero_hijos = len(ganadores)
             restantes = population_size - Numero_hijos
-
+            
             print("Número de hijos:", Numero_hijos)
             print("Número de nuevos sin padres:", restantes)
 
@@ -200,11 +202,16 @@ def main():
                     y = random.randint(0, GRID_SIZE - 1)
                     padre1 = ganadores[i]
                     padre2 = ganadores[i + 1]
+                    if padre1[4] == True or padre2[4] == True:
+                        #print("es un hijo asesino: ")
+                        asesino =random.random() < proabilidad_asesino*2
+                        
                     probabilidad_derecha = padre1[2] + padre2[2] / 2  # Suma de las probabilidades de los padres
                     padre_id = padre1[3]  # ID del primer padre
-                    population.append(Individuo(x, y, probabilidad_derecha, padre_id))
+                    asesino = random.random() < proabilidad_asesino * 2 
+                    population.append(Individuo(x, y, probabilidad_derecha, padre_id, asesino))
                     Numero_hijos -= 1
-
+            #print("hijos generados: ",len(population))
             # Generar nuevos individuos sin padres
             for i in range(int(restantes)):
                 x = random.randint(0, GRID_SIZE - 2)
@@ -236,6 +243,5 @@ def main():
         f.write(f"media_probabilidad_derecha_por_generacion = {media_probabilidad_derecha_por_generacion}\n")
 
     pygame.quit()
-
 if __name__ == "__main__":
     main()
