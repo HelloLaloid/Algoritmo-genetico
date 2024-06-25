@@ -1,10 +1,5 @@
 import pygame
 import random
-# Dimensiones de la ventana y la cuadrícula
-WINDOW_SIZE = 800
-GRID_SIZE = 50
-CELL_SIZE = WINDOW_SIZE // GRID_SIZE
-
 # Colores
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -13,7 +8,16 @@ SKY = (0,255,255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 DARK_GREEN = (34, 139, 34)
+# variables
+GRID_SIZE = 50
+Max_turnos = 2000
+population_size = 100
+proabilidad_asesino = 0.1
+proabilidad_derecha_extra = random.uniform(0.05, 0.3)
 
+# Dimensiones de la ventana y la cuadrícula
+WINDOW_SIZE = 800
+CELL_SIZE = WINDOW_SIZE // GRID_SIZE
 # Definir clase Individuo
 class Individuo:
     generacion_actual = 1
@@ -65,6 +69,7 @@ class Individuo:
                             self.en_meta = True
                     else:
                         self.pasos += 1 
+
 # Función para dibujar la cuadrícula inicial
 def draw_grid(screen):
     for x in range(0, WINDOW_SIZE, CELL_SIZE):
@@ -129,10 +134,8 @@ def main():
     clock = pygame.time.Clock()
 
     # Inicialización de la población de individuos (cromosomas)
-    population_size = 100
     population = []
     ganadores = []
-    Max_turnos = 2000
 
     for _ in range(population_size):
         x = random.randint(0, GRID_SIZE - 2)
@@ -155,13 +158,12 @@ def main():
         ganadores = [(ind.id, ind.pasos, ind.probabilidad_derecha, ind.padre_id) for ind in population if ind.en_meta]
 
         if len(ganadores) >= GRID_SIZE or all(ind.en_meta for ind in population) or turno == Max_turnos:
-            # Ordenar ganadores por número de pasos
-            
+            # Ordenar ganadores por número de pasos y imprimirlos
+            ganadores.sort(key=lambda x: x[1])
             draw_winners(screen, font, ganadores)
             print(f"Ganadores: \n {', '.join([f'{ganador[0]} ({ganador[1]} pasos, P.derecha: {ganador[2]:.2f}) ' for ganador in ganadores])}""\n")
             
             # eliminar al ultimo si son ganadores impares
-            # print(len(ganadores))
             if not len(ganadores) % 2 == 0:
                 ganadores.pop()
 
@@ -173,18 +175,17 @@ def main():
 
             #aumentar proabilidad a la derecha de los ganadores
             for ganador in ganadores:
-                ganador[2] + 0.2
+                ganador[2] + proabilidad_derecha_extra
             
-            Numero_hijos = 0
             Numero_hijos = len(ganadores)
             restantes = population_size - Numero_hijos 
 
-            print(Numero_hijos)
-            print(restantes)
+            print("numero de hijos: ", Numero_hijos)
+            print("numero de nuevos sin padres: ", restantes)
             # Generar nueva generación con herencia de probabilidad y padres
             while Numero_hijos > 0:
                 for i in range(0,len(ganadores),2):
-                    x = random.randint(0, GRID_SIZE - 90)
+                    x = random.randint(0, GRID_SIZE - 2)
                     y = random.randint(0, GRID_SIZE - 1)
                     padre1 = ganadores[i]
                     padre2 = ganadores[i+1] 
@@ -195,11 +196,11 @@ def main():
 
             #los no ganadores    
             for i in range(int(restantes)):
-                x = random.randint(0, GRID_SIZE - 90)
+                x = random.randint(0, GRID_SIZE - 2)
                 y = random.randint(0, GRID_SIZE - 1)
                 probabilidad_derecha = 0.11
                 padre_id = 0
-                asesino = random.random() < 0.1
+                asesino = random.random() < proabilidad_asesino
                 population.append(Individuo(x, y, probabilidad_derecha, padre_id, asesino))
             turno = 1
         else:
